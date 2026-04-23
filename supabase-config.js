@@ -1,4 +1,4 @@
 window.SUPABASE_CONFIG = {
-  url: "https://supabase.com/dashboard/project/hqrldzsaudxmowujbvfy/settings/api-keys",
-  anonKey: "https://supabase.com/dashboard/project/hqrldzsaudxmowujbvfy/settings/api-keys",
+  url: "https://hqrldzsaudxmowujbvfy.supabase.co",
+  anonKey: "sb_publishable_NDz3PUWVsNqjSUPVsodbeg_jRzfYwkO",
 };
