@@ -9,33 +9,26 @@
   <body>
     <header class="top-area">
       <div class="top-title">
-        <div>
-          <p class="eyebrow" id="eyebrowText">My Navigation</p>
-          <h1 id="pageTitle">个人自定义导航</h1>
-        </div>
-        <div class="toolbar-actions">
-          <button class="ghost-button" id="exportButton" type="button">导出</button>
-          <label class="ghost-button import-label" for="importInput">导入</label>
-          <input id="importInput" type="file" accept="application/json" />
-          <button class="primary-button" id="editToggle" type="button">编辑</button>
+        <div class="search-shell">
+          <form class="search-card" id="searchForm">
+            <input
+              id="searchInput"
+              type="search"
+              autocomplete="off"
+              placeholder="输入关键词搜索"
+              aria-label="搜索关键词"
+            />
+            <select id="engineSelect" aria-label="选择搜索引擎"></select>
+            <button type="submit" id="searchButton">搜索</button>
+          </form>
         </div>
       </div>
-
-      <form class="search-card" id="searchForm">
-        <input
-          id="searchInput"
-          type="search"
-          autocomplete="off"
-          placeholder="输入关键词搜索"
-          aria-label="搜索关键词"
-        />
-        <select id="engineSelect" aria-label="选择搜索引擎"></select>
-        <button type="submit" id="searchButton">搜索</button>
-      </form>
     </header>
 
     <main class="shell">
-      <aside class="sidebar" id="sidebar" aria-label="分类导航"></aside>
+      <aside class="sidebar-wrap">
+        <aside class="sidebar" id="sidebar" aria-label="分类导航"></aside>
+      </aside>
 
       <section class="content">
         <div class="workspace">
@@ -57,16 +50,12 @@
                 <input id="siteIcon" type="text" placeholder="图标文字、emoji 或联网图标地址，可选" />
                 <button id="fetchIconButton" type="button">获取</button>
               </div>
-              <button type="submit">添加网站</button>
-            </form>
-
-            <p class="edit-tip">右侧表单可直接使用；点击“编辑”后可拖动网站、调整分类顺序，并显示改名/删除操作。</p>
-
-            <form class="edit-form" id="appearanceForm">
-              <h2>页面设置</h2>
-              <input id="settingsEyebrow" type="text" placeholder="副标题，例如：My Navigation" />
-              <input id="settingsTitle" type="text" placeholder="主标题，例如：个人自定义导航" />
-              <button type="submit">保存页面设置</button>
+              <input id="editingSiteId" type="hidden" />
+              <input id="editingSiteCategoryId" type="hidden" />
+              <div class="site-form-actions">
+                <button id="cancelSiteEditButton" type="button" hidden>取消编辑</button>
+                <button id="siteSubmitButton" type="submit">添加网站</button>
+              </div>
             </form>
 
             <form class="edit-form" id="authForm">
@@ -86,6 +75,13 @@
           </aside>
         </div>
       </section>
+
+      <div class="toolbar-actions">
+        <button class="ghost-button" id="exportButton" type="button">导出</button>
+        <label class="ghost-button import-label" for="importInput">导入</label>
+        <input id="importInput" type="file" accept="application/json" />
+        <button class="primary-button" id="editToggle" type="button">编辑</button>
+      </div>
     </main>
 
     <template id="categoryTemplate">
@@ -110,6 +106,7 @@
           <span class="site-icon"></span>
           <span class="site-title"></span>
         </a>
+        <button class="edit-site" type="button" aria-label="编辑网站">✎</button>
         <button class="refresh-site-icon" type="button" aria-label="联网获取图标">↻</button>
         <button class="remove-site" type="button" aria-label="删除网站">×</button>
       </div>

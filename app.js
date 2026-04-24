@@ -75,9 +75,6 @@ const sidebar = document.querySelector("#sidebar");
 const categoryCards = document.querySelector("#categoryCards");
 const editToggle = document.querySelector("#editToggle");
 const editPanel = document.querySelector("#editPanel");
-const appearanceForm = document.querySelector("#appearanceForm");
-const settingsEyebrow = document.querySelector("#settingsEyebrow");
-const settingsTitle = document.querySelector("#settingsTitle");
 const categoryForm = document.querySelector("#categoryForm");
 const categoryName = document.querySelector("#categoryName");
 const siteForm = document.querySelector("#siteForm");
@@ -85,6 +82,10 @@ const siteCategory = document.querySelector("#siteCategory");
 const siteName = document.querySelector("#siteName");
 const siteUrl = document.querySelector("#siteUrl");
 const siteIcon = document.querySelector("#siteIcon");
+const editingSiteId = document.querySelector("#editingSiteId");
+const editingSiteCategoryId = document.querySelector("#editingSiteCategoryId");
+const siteSubmitButton = document.querySelector("#siteSubmitButton");
+const cancelSiteEditButton = document.querySelector("#cancelSiteEditButton");
 const fetchIconButton = document.querySelector("#fetchIconButton");
 const exportButton = document.querySelector("#exportButton");
 const importInput = document.querySelector("#importInput");
@@ -105,13 +106,6 @@ initCloudSession();
 window.addEventListener("hashchange", () => {
   activeCategoryId = location.hash.replace("#", "");
   renderSidebar();
-});
-
-appearanceForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  data.settings.eyebrow = settingsEyebrow.value.trim() || defaultData.settings.eyebrow;
-  data.settings.title = settingsTitle.value.trim() || defaultData.settings.title;
-  saveAndRender();
 });
 
 authForm.addEventListener("submit", async (event) => {
@@ -187,24 +181,40 @@ fetchIconButton.addEventListener("click", () => {
   siteIcon.value = getFaviconUrl(url);
 });
 
+cancelSiteEditButton.addEventListener("click", () => {
+  resetSiteForm();
+});
+
 siteForm.addEventListener("submit", (event) => {
   event.preventDefault();
-  const category = data.categories.find((item) => item.id === siteCategory.value);
   const name = siteName.value.trim();
   const url = normalizeUrl(siteUrl.value.trim());
   const icon = siteIcon.value.trim() || getFaviconUrl(url);
+  const targetCategory = data.categories.find((item) => item.id === siteCategory.value);
 
-  if (!category || !name || !url) return;
+  if (!targetCategory || !name || !url) return;
 
-  category.sites.push({
+  if (editingSiteId.value) {
+    updateSite({
+      sourceCategoryId: editingSiteCategoryId.value,
+      siteId: editingSiteId.value,
+      targetCategoryId: targetCategory.id,
+      name,
+      url,
+      icon,
+    });
+    return;
+  }
+
+  targetCategory.sites.push({
     id: createId(),
     name,
     url,
     icon,
   });
 
-  siteForm.reset();
-  siteCategory.value = category.id;
+  resetSiteForm();
+  siteCategory.value = targetCategory.id;
   saveAndRender();
 });
 
@@ -239,7 +249,14 @@ importInput.addEventListener("change", async () => {
 });
 
 function render() {
-  renderPageSettings();
+  const settings = getSettings();
+  if (eyebrowText) {
+    eyebrowText.textContent = settings.eyebrow;
+  }
+  if (pageTitle) {
+    pageTitle.textContent = settings.title;
+  }
+  document.title = settings.title || "个人导航";
   renderSearchEngines();
   renderSidebar();
   renderCategoryOptions();
@@ -261,17 +278,6 @@ function renderSearchEngines() {
   updateSearchButton();
 }
 
-function renderPageSettings() {
-  const settings = getSettings();
-
-  eyebrowText.textContent = settings.eyebrow;
-  pageTitle.textContent = settings.title;
-  document.title = settings.title || "个人导航";
-
-  settingsEyebrow.value = settings.eyebrow;
-  settingsTitle.value = settings.title;
-}
-
 function renderSidebar() {
   sidebar.innerHTML = "";
   const activeExists = data.categories.some((category) => category.id === activeCategoryId);
@@ -283,11 +289,18 @@ function renderSidebar() {
     link.className = "side-link";
     link.classList.toggle("is-active", category.id === currentCategoryId);
     link.href = `#${category.id}`;
+    link.draggable = editing;
+    link.dataset.categoryId = category.id;
     link.textContent = category.name;
     link.addEventListener("click", () => {
       activeCategoryId = category.id;
       renderSidebar();
     });
+    link.addEventListener("dragstart", (event) => startCategoryDrag(event, category.id, link));
+    link.addEventListener("dragend", () => endCategoryDrag(link));
+    link.addEventListener("dragover", (event) => overSidebarItem(event, link));
+    link.addEventListener("dragleave", () => link.classList.remove("is-drop-target", "is-drop-after"));
+    link.addEventListener("drop", (event) => dropSidebarItem(event, category.id, link));
     sidebar.append(link);
   });
 }
@@ -412,6 +425,10 @@ function createSiteItem(categoryId, site) {
     saveAndRender();
   });
 
+  item.querySelector(".edit-site").addEventListener("click", () => {
+    beginSiteEdit(categoryId, site);
+  });
+
   item.querySelector(".remove-site").addEventListener("click", () => {
     deleteSite(categoryId, site.id);
   });
@@ -489,6 +506,10 @@ function moveSite(sourceCategoryId, sourceSiteId, targetCategoryId, targetSiteId
     targetIndex += 1;
   }
 
+  if (sourceCategory === targetCategory && sourceIndex < targetIndex) {
+    targetIndex -= 1;
+  }
+
   targetCategory.sites.splice(targetIndex, 0, site);
   saveAndRender();
 }
@@ -512,6 +533,26 @@ function endCategoryDrag(card) {
   clearDropStates();
 }
 
+function overSidebarItem(event, link) {
+  if (!editing || !draggedCategoryId) return;
+
+  event.preventDefault();
+  const rect = link.getBoundingClientRect();
+  const shouldPlaceAfter = event.clientY > rect.top + rect.height / 2;
+  link.classList.toggle("is-drop-after", shouldPlaceAfter);
+  link.classList.add("is-drop-target");
+}
+
+function dropSidebarItem(event, targetCategoryId, link) {
+  if (!editing || !draggedCategoryId) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  const rect = link.getBoundingClientRect();
+  const place = event.clientY > rect.top + rect.height / 2 ? "after" : "before";
+  moveCategory(draggedCategoryId, targetCategoryId, place);
+}
+
 function overCategory(event, card) {
   if (!editing || !draggedCategoryId) return;
 
@@ -527,7 +568,7 @@ function dropCategory(event, targetCategoryId) {
   moveCategory(draggedCategoryId, targetCategoryId);
 }
 
-function moveCategory(sourceCategoryId, targetCategoryId) {
+function moveCategory(sourceCategoryId, targetCategoryId, place = "before") {
   if (sourceCategoryId === targetCategoryId) return;
 
   const sourceIndex = data.categories.findIndex((category) => category.id === sourceCategoryId);
@@ -535,13 +576,24 @@ function moveCategory(sourceCategoryId, targetCategoryId) {
   if (sourceIndex < 0 || targetIndex < 0) return;
 
   const [category] = data.categories.splice(sourceIndex, 1);
-  data.categories.splice(targetIndex, 0, category);
+  let insertIndex = targetIndex;
+  if (place === "after") {
+    insertIndex += 1;
+  }
+
+  if (sourceIndex < insertIndex) {
+    insertIndex -= 1;
+  }
+
+  data.categories.splice(insertIndex, 0, category);
   saveAndRender();
 }
 
 function clearDropStates() {
-  document.querySelectorAll(".is-droppable, .is-drop-target, .is-drop-after, .is-category-target").forEach((element) => {
-    element.classList.remove("is-droppable", "is-drop-target", "is-drop-after", "is-category-target");
+  document
+    .querySelectorAll(".is-droppable, .is-drop-target, .is-drop-after, .is-category-target, .is-dragging")
+    .forEach((element) => {
+      element.classList.remove("is-droppable", "is-drop-target", "is-drop-after", "is-category-target", "is-dragging");
   });
 }
 
@@ -617,6 +669,9 @@ function deleteSite(categoryId, siteId) {
   if (!category) return;
 
   category.sites = category.sites.filter((site) => site.id !== siteId);
+  if (editingSiteId.value === siteId) {
+    resetSiteForm();
+  }
   saveAndRender();
 }
 
@@ -888,4 +943,46 @@ function getSettings() {
     eyebrow: data.settings?.eyebrow || defaultData.settings.eyebrow,
     title: data.settings?.title || defaultData.settings.title,
   };
+}
+
+function beginSiteEdit(categoryId, site) {
+  editingSiteId.value = site.id;
+  editingSiteCategoryId.value = categoryId;
+  siteCategory.value = categoryId;
+  siteName.value = site.name;
+  siteUrl.value = site.url;
+  siteIcon.value = site.icon || "";
+  siteSubmitButton.textContent = "保存修改";
+  cancelSiteEditButton.hidden = false;
+  siteName.focus();
+}
+
+function resetSiteForm() {
+  siteForm.reset();
+  editingSiteId.value = "";
+  editingSiteCategoryId.value = "";
+  siteSubmitButton.textContent = "添加网站";
+  cancelSiteEditButton.hidden = true;
+  if (data.categories[0]) {
+    siteCategory.value = data.categories[0].id;
+  }
+}
+
+function updateSite({ sourceCategoryId, siteId, targetCategoryId, name, url, icon }) {
+  const sourceCategory = data.categories.find((category) => category.id === sourceCategoryId);
+  const targetCategory = data.categories.find((category) => category.id === targetCategoryId);
+  if (!sourceCategory || !targetCategory) return;
+
+  const siteIndex = sourceCategory.sites.findIndex((site) => site.id === siteId);
+  if (siteIndex < 0) return;
+
+  const [site] = sourceCategory.sites.splice(siteIndex, 1);
+  site.name = name;
+  site.url = url;
+  site.icon = icon;
+  targetCategory.sites.push(site);
+
+  resetSiteForm();
+  siteCategory.value = targetCategoryId;
+  saveAndRender();
 }
