@@ -63,11 +63,14 @@
               </div>
             </form>
 
-            <form class="edit-form" id="authForm">
+            <form class="edit-form auth-sync-form" id="authForm">
               <h2>账号同步</h2>
-              <p class="auth-status" id="authStatus">未配置 Supabase，当前使用本地数据。</p>
+              <p class="auth-status auth-status-pill" id="authStatus">未配置 Supabase，当前使用本地数据。</p>
               <input id="authUsername" type="email" autocomplete="username" placeholder="邮箱地址" />
               <input id="authPassword" type="password" autocomplete="current-password" placeholder="密码" />
+              <div class="auth-inline-row">
+                <button class="inline-link-button" id="forgotPasswordButton" type="button">忘记密码？</button>
+              </div>
               <div class="auth-actions">
                 <button id="loginButton" type="submit">登录</button>
                 <button id="registerButton" type="button">注册</button>

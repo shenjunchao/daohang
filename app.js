@@ -101,6 +101,7 @@ const authForm = document.querySelector("#authForm");
 const authStatus = document.querySelector("#authStatus");
 const authUsername = document.querySelector("#authUsername");
 const authPassword = document.querySelector("#authPassword");
+const forgotPasswordButton = document.querySelector("#forgotPasswordButton");
 const loginButton = document.querySelector("#loginButton");
 const registerButton = document.querySelector("#registerButton");
 const syncNowButton = document.querySelector("#syncNowButton");
@@ -133,6 +134,7 @@ siteForm.addEventListener("submit", handleSiteSubmit);
 exportButton.addEventListener("click", handleExport);
 importInput.addEventListener("change", handleImport);
 authForm.addEventListener("submit", handleLogin);
+forgotPasswordButton.addEventListener("click", handleForgotPassword);
 registerButton.addEventListener("click", handleRegister);
 syncNowButton.addEventListener("click", () => syncToCloud({ showStatus: true }));
 logoutButton.addEventListener("click", handleLogout);
@@ -253,6 +255,7 @@ function renderAuthState() {
 
   loginButton.hidden = !configured || loggedIn;
   registerButton.hidden = !configured || loggedIn;
+  forgotPasswordButton.hidden = !configured || loggedIn;
   syncNowButton.hidden = !configured || !loggedIn;
   logoutButton.hidden = !configured || !loggedIn;
 }
@@ -606,6 +609,30 @@ async function handleRegister() {
   setAuthNotice("注册成功，正在同步当前导航到云端...");
   render();
   await syncToCloud({ showStatus: true });
+}
+
+async function handleForgotPassword() {
+  if (!supabaseClient) return;
+
+  const email = authUsername.value.trim();
+  if (!email) {
+    setAuthNotice("请先输入你的注册邮箱。");
+    renderAuthState();
+    authUsername.focus();
+    return;
+  }
+
+  const redirectTo = new URL("./reset-password.html", window.location.href).toString();
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo });
+
+  if (error) {
+    setAuthNotice(error.message || "发送重置邮件失败。");
+    renderAuthState();
+    return;
+  }
+
+  setAuthNotice("重置密码邮件已发送，请前往邮箱打开链接设置新密码。");
+  renderAuthState();
 }
 
 async function handleLogout() {

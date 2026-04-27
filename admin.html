@@ -11,33 +11,61 @@
       <section class="admin-card">
         <div class="admin-header">
           <div>
-            <p class="admin-eyebrow">Announcement Admin</p>
+            <p class="admin-eyebrow">ANNOUNCEMENT ADMIN</p>
             <h1>公告管理后台</h1>
           </div>
-          <a class="admin-back" href="./index.html">返回前台</a>
+          <a class="admin-back" href="./index.html">返回前台 <span aria-hidden="true">→</span></a>
         </div>
 
-        <form class="admin-auth" id="adminAuthForm">
-          <h2>管理员登录</h2>
-          <p class="auth-status" id="adminAuthStatus">请先登录管理员账号。</p>
-          <input id="adminAuthEmail" type="email" autocomplete="username" placeholder="邮箱地址" />
-          <input id="adminAuthPassword" type="password" autocomplete="current-password" placeholder="密码" />
-          <div class="site-form-actions">
-            <button id="adminLoginButton" type="submit">登录</button>
-            <button id="adminLogoutButton" type="button" hidden>退出登录</button>
+        <form class="admin-panel admin-auth" id="adminAuthForm">
+          <div class="admin-panel-head">
+            <div class="admin-panel-icon admin-panel-icon-blue" aria-hidden="true">🔒</div>
+            <div>
+              <h2>管理员登录</h2>
+              <p class="auth-status" id="adminAuthStatus">请先登录管理员账号。</p>
+            </div>
+          </div>
+
+          <div class="admin-input-grid">
+            <label class="admin-field">
+              <span class="admin-field-icon" aria-hidden="true">✉</span>
+              <input id="adminAuthEmail" type="email" autocomplete="username" placeholder="邮箱地址" />
+            </label>
+
+            <label class="admin-field">
+              <span class="admin-field-icon" aria-hidden="true">🔒</span>
+              <input id="adminAuthPassword" type="password" autocomplete="current-password" placeholder="密码" />
+            </label>
+          </div>
+
+          <div class="admin-auth-actions">
+            <button class="admin-primary-button" id="adminLoginButton" type="submit">登录</button>
+            <button class="admin-secondary-button" id="adminLogoutButton" type="button" hidden>退出登录</button>
           </div>
         </form>
 
-        <form class="admin-form" id="announcementAdminForm" hidden>
-          <div class="admin-section-head">
-            <h2>编辑公告</h2>
-            <p id="announcementAdminMeta">登录后可修改公告内容。</p>
+        <form class="admin-panel admin-form" id="announcementAdminForm" hidden>
+          <div class="admin-panel-head">
+            <div class="admin-panel-icon admin-panel-icon-green" aria-hidden="true">✎</div>
+            <div>
+              <h2>编辑公告</h2>
+              <p id="announcementAdminMeta">登录后可修改公告内容。</p>
+            </div>
           </div>
-          <input id="announcementAdminTitle" type="text" placeholder="公告标题，例如：重要提示（一定要看）" />
-          <textarea id="announcementAdminContent" rows="14" placeholder="输入公告正文，支持换行显示。"></textarea>
-          <div class="site-form-actions">
-            <button id="announcementAdminReload" type="button">重新读取</button>
-            <button id="announcementAdminSave" type="submit">更新公告</button>
+
+          <label class="admin-field admin-field-full">
+            <span class="admin-field-icon" aria-hidden="true">📣</span>
+            <input id="announcementAdminTitle" type="text" placeholder="公告标题，例如：重要提示（一定要看）" />
+          </label>
+
+          <label class="admin-textarea-wrap">
+            <span class="admin-field-icon admin-textarea-icon" aria-hidden="true">📄</span>
+            <textarea id="announcementAdminContent" rows="14" placeholder="输入公告正文，支持换行显示。"></textarea>
+          </label>
+
+          <div class="admin-bottom-actions">
+            <button class="admin-secondary-button" id="announcementAdminReload" type="button">⟳ 重新读取</button>
+            <button class="admin-outline-button" id="announcementAdminSave" type="submit">✈ 更新公告</button>
           </div>
         </form>
       </section>
