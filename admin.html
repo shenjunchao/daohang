@@ -63,11 +63,39 @@
             <textarea id="announcementAdminContent" rows="14" placeholder="输入公告正文，支持换行显示。"></textarea>
           </label>
 
+          <div class="admin-input-grid">
+            <label class="admin-field">
+              <span class="admin-field-icon" aria-hidden="true">🔗</span>
+              <input id="announcementAdminDownloadUrl" type="url" placeholder="下载地址，例如：https://xxx/plugin.zip" />
+            </label>
+
+            <label class="admin-field">
+              <span class="admin-field-icon" aria-hidden="true">⬇</span>
+              <input id="announcementAdminDownloadLabel" type="text" placeholder="下载按钮文字，例如：下载插件" />
+            </label>
+          </div>
+
           <div class="admin-bottom-actions">
             <button class="admin-secondary-button" id="announcementAdminReload" type="button">⟳ 重新读取</button>
             <button class="admin-outline-button" id="announcementAdminSave" type="submit">✈ 更新公告</button>
           </div>
         </form>
+
+        <section class="admin-panel admin-feedback-panel" id="feedbackAdminPanel" hidden>
+          <div class="admin-panel-head">
+            <div class="admin-panel-icon admin-panel-icon-orange" aria-hidden="true">💬</div>
+            <div>
+              <h2>用户反馈</h2>
+              <p id="feedbackAdminMeta">登录管理员后可查看用户提交的评论反馈。</p>
+            </div>
+          </div>
+
+          <div class="admin-bottom-actions admin-feedback-actions">
+            <button class="admin-secondary-button" id="feedbackAdminReload" type="button">⟳ 刷新反馈</button>
+          </div>
+
+          <div class="feedback-admin-list" id="feedbackAdminList"></div>
+        </section>
       </section>
     </main>
 

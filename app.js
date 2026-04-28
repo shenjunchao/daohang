@@ -38,6 +38,8 @@ const defaultAnnouncement = {
   id: null,
   title: "公告",
   content: "这里可以展示使用教程、注意事项和版本更新说明。你可以在管理页修改内容并发布。",
+  downloadUrl: "",
+  downloadLabel: "",
   updatedAt: "",
 };
 
@@ -112,7 +114,14 @@ const announcementModal = document.querySelector("#announcementModal");
 const announcementModalTitle = document.querySelector("#announcementModalTitle");
 const announcementUpdatedAt = document.querySelector("#announcementUpdatedAt");
 const announcementContent = document.querySelector("#announcementContent");
+const announcementDownloadLink = document.querySelector("#announcementDownloadLink");
 const announcementModalClose = document.querySelector("#announcementModalClose");
+const announcementFeedbackForm = document.querySelector("#announcementFeedbackForm");
+const announcementFeedbackName = document.querySelector("#announcementFeedbackName");
+const announcementFeedbackEmail = document.querySelector("#announcementFeedbackEmail");
+const announcementFeedbackContent = document.querySelector("#announcementFeedbackContent");
+const announcementFeedbackStatus = document.querySelector("#announcementFeedbackStatus");
+const announcementFeedbackSubmit = document.querySelector("#announcementFeedbackSubmit");
 
 render();
 initCloudSession();
@@ -140,6 +149,7 @@ syncNowButton.addEventListener("click", () => syncToCloud({ showStatus: true }))
 logoutButton.addEventListener("click", handleLogout);
 announcementTrigger.addEventListener("click", openAnnouncementModal);
 announcementModalClose.addEventListener("click", closeAnnouncementModal);
+announcementFeedbackForm?.addEventListener("submit", handleAnnouncementFeedbackSubmit);
 announcementModal.addEventListener("click", (event) => {
   if (event.target === announcementModal) {
     closeAnnouncementModal();
@@ -160,6 +170,7 @@ function render() {
   renderCategories();
   renderAuthState();
   syncEditingState();
+  syncAnnouncementFeedbackState();
 }
 
 function renderSearchEngines() {
@@ -188,6 +199,13 @@ function renderAnnouncement() {
 
   if (announcementContent) {
     announcementContent.textContent = announcement.content || defaultAnnouncement.content;
+  }
+
+  if (announcementDownloadLink) {
+    const hasDownload = Boolean(announcement.downloadUrl);
+    announcementDownloadLink.hidden = !hasDownload;
+    announcementDownloadLink.href = hasDownload ? announcement.downloadUrl : "#";
+    announcementDownloadLink.textContent = announcement.downloadLabel || "下载附件";
   }
 }
 
@@ -258,6 +276,34 @@ function renderAuthState() {
   forgotPasswordButton.hidden = !configured || loggedIn;
   syncNowButton.hidden = !configured || !loggedIn;
   logoutButton.hidden = !configured || !loggedIn;
+}
+
+function syncAnnouncementFeedbackState() {
+  if (!announcementFeedbackForm) return;
+
+  const configured = supabaseReady;
+  const loggedIn = Boolean(currentUser);
+
+  announcementFeedbackName.disabled = !configured;
+  announcementFeedbackEmail.disabled = !configured;
+  announcementFeedbackContent.disabled = !configured;
+  announcementFeedbackSubmit.disabled = !configured;
+  announcementFeedbackEmail.readOnly = loggedIn;
+
+  if (loggedIn) {
+    announcementFeedbackEmail.value = currentUser.email || "";
+  }
+
+  if (!configured) {
+    announcementFeedbackStatus.textContent = "未配置 Supabase，暂时无法提交反馈。";
+    return;
+  }
+
+  if (!announcementFeedbackStatus.dataset.manual || announcementFeedbackStatus.dataset.manual === "false") {
+    announcementFeedbackStatus.textContent = loggedIn
+      ? "已登录，可直接向开发者 / 管理员提交反馈。"
+      : "可匿名留言，建议留下邮箱，方便管理员联系你。";
+  }
 }
 
 function syncEditingState() {
@@ -465,6 +511,10 @@ async function handleImport() {
 function openAnnouncementModal() {
   announcementModal.hidden = false;
   document.body.classList.add("is-modal-open");
+  if (announcementFeedbackStatus) {
+    announcementFeedbackStatus.dataset.manual = "false";
+  }
+  syncAnnouncementFeedbackState();
 }
 
 function closeAnnouncementModal() {
@@ -481,7 +531,7 @@ async function initAnnouncement(options = {}) {
   try {
     const { data: row, error } = await supabaseClient
       .from("site_announcements")
-      .select("id, title, content, updated_at")
+      .select("id, title, content, download_url, download_label, updated_at")
       .eq("is_published", true)
       .order("updated_at", { ascending: false })
       .limit(1)
@@ -496,6 +546,8 @@ async function initAnnouncement(options = {}) {
           id: row.id,
           title: String(row.title || defaultAnnouncement.title),
           content: String(row.content || defaultAnnouncement.content),
+          downloadUrl: String(row.download_url || ""),
+          downloadLabel: String(row.download_label || ""),
           updatedAt: String(row.updated_at || ""),
         }
       : {
@@ -510,6 +562,61 @@ async function initAnnouncement(options = {}) {
   }
 
   renderAnnouncement();
+}
+
+async function handleAnnouncementFeedbackSubmit(event) {
+  event.preventDefault();
+
+  if (!supabaseClient) {
+    setAnnouncementFeedbackStatus("未配置 Supabase，暂时无法提交反馈。");
+    return;
+  }
+
+  const nickname = announcementFeedbackName.value.trim();
+  const contactEmail = announcementFeedbackEmail.value.trim();
+  const content = announcementFeedbackContent.value.trim();
+
+  if (!content) {
+    setAnnouncementFeedbackStatus("请先填写反馈内容。");
+    announcementFeedbackContent.focus();
+    return;
+  }
+
+  announcementFeedbackSubmit.disabled = true;
+  setAnnouncementFeedbackStatus("正在提交反馈...");
+
+  const payload = {
+    user_id: currentUser?.id || null,
+    nickname,
+    contact_email: contactEmail,
+    content,
+    source_page: window.location.href,
+    status: "new",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = await supabaseClient.from("site_feedback").insert(payload);
+
+  announcementFeedbackSubmit.disabled = false;
+
+  if (error) {
+    setAnnouncementFeedbackStatus(error.message || "提交反馈失败，请稍后重试。");
+    return;
+  }
+
+  announcementFeedbackContent.value = "";
+  if (!currentUser) {
+    announcementFeedbackName.value = "";
+    announcementFeedbackEmail.value = "";
+  }
+  setAnnouncementFeedbackStatus("反馈已提交成功，感谢你的建议。", true);
+}
+
+function setAnnouncementFeedbackStatus(text, keep = false) {
+  if (!announcementFeedbackStatus) return;
+  announcementFeedbackStatus.textContent = text;
+  announcementFeedbackStatus.dataset.manual = keep ? "true" : "false";
 }
 
 async function initCloudSession() {
