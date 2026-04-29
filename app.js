@@ -697,7 +697,14 @@ async function handleRegister() {
   }
 
   const localSnapshot = normalizeImportedData(data);
-  const { data: signUpData, error } = await supabaseClient.auth.signUp({ email, password });
+  const emailRedirectTo = new URL("./", window.location.href).toString();
+  const { data: signUpData, error } = await supabaseClient.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo,
+    },
+  });
   if (error) {
     setAuthNotice(error.message || "注册失败。");
     renderAuthState();
